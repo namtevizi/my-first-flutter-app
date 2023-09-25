@@ -312,3 +312,5 @@ Then follow the steps:
 - https://www.felixlarsen.com/blog/update-your-flutter-project-to-flutter-20
 - https://auberginesolutions.com/blog/upgrade-the-flutter-version/
 - https://stackoverflow.com/questions/64797607/how-do-i-upgrade-an-existing-flutter-app
+- https://codelabs.developers.google.com/codelabs/flutter-codelab-first
+- https://codelabs.developers.google.com/codelabs/flutter-next-gen-uis
