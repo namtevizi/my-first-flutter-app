@@ -284,5 +284,33 @@ Following are the different kinds of Flutter buttons:
 - **Hero**: The Hero widget marks its child as the candidate for hero animations.
 - **Navigator**: The Navigator widget handles a group of child widgets through the stack discipline.
 
+# Upgrade your application to the latest Flutter version
+
+To update the project to null safety follow these steps:
+
+> Side note: change the flutter version in pubsec.yaml, make new project and copy the following line:
+
+```
+sdk: ">=2.19.6 <3.0.0"
+```
+
+Then follow the steps:
+
+1. Run flutter upgrade in the terminal to upgrade Flutter
+2. Run dart migrate to run the dart migration tool.
+3. Solve all errors which the migration tool shows.
+4. Run flutter pub outdated --mode=null-safety to print all outdated packages.
+5. Run flutter pub upgrade --null-safety to upgrade all packages automatically.
+6. Check the code for errors and solve them (Very important).
+7. Run dart migrate again and it should now be successful. Follow the link to checkout the proposed changes.
+8. Press the "Apply Migration" button.
+9. Check the code for errors again and fix them.
+
 ## References
 - https://mindmajix.com/flutter-tutorial
+- https://docs.flutter.dev/release/upgrade
+- https://www.felixlarsen.com/blog/update-your-flutter-project-to-flutter-20
+- https://auberginesolutions.com/blog/upgrade-the-flutter-version/
+- https://stackoverflow.com/questions/64797607/how-do-i-upgrade-an-existing-flutter-app
+- https://codelabs.developers.google.com/codelabs/flutter-codelab-first
+- https://codelabs.developers.google.com/codelabs/flutter-next-gen-uis
