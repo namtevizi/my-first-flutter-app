@@ -3,6 +3,10 @@
 import 'package:english_words/english_words.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'dart:io' as io;
+import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   runApp(MyApp());
@@ -57,6 +61,20 @@ class MyAppState extends ChangeNotifier {
     favorites.remove(pair);
     notifyListeners();
   }
+
+  String progressData = '0%';
+  
+  void setProgressData(String data) {
+    progressData = data;
+    notifyListeners();
+  }
+
+  var progressValue = 0.0;
+
+  void setProgressValue(double value) {
+    progressValue = value;
+    notifyListeners();
+  }
 }
 
 class MyHomePage extends StatefulWidget {
@@ -78,6 +96,9 @@ class _MyHomePageState extends State<MyHomePage> {
         break;
       case 1:
         page = FavoritesPage();
+        break;
+      case 2:
+        page = DownloadPage();
         break;
       default:
         throw UnimplementedError('no widget for $selectedIndex');
@@ -113,6 +134,10 @@ class _MyHomePageState extends State<MyHomePage> {
                         icon: Icon(Icons.favorite),
                         label: 'Favorites',
                       ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.download),
+                        label: 'Downloader',
+                      ),
                     ],
                     currentIndex: selectedIndex,
                     onTap: (value) {
@@ -138,6 +163,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       NavigationRailDestination(
                         icon: Icon(Icons.favorite),
                         label: Text('Favorites'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.download),
+                        label: Text('Downloader'),
                       ),
                     ],
                     selectedIndex: selectedIndex,
@@ -359,6 +388,163 @@ class _HistoryListViewState extends State<HistoryListView> {
           );
         },
       ),
+    );
+  }
+}
+
+class DownloadPage extends StatefulWidget {
+  const DownloadPage({Key? key}) : super(key: key);
+
+  @override
+  State<DownloadPage> createState() => _DownloadPageState();
+}
+
+class _DownloadPageState extends State<DownloadPage> {
+
+ static const localDataList = [
+    [
+      'Macmillan English',
+      'Collins Cobuild 5',
+      'Cambridge Advanced Learners',
+      'American Idioms',
+      'Real People TTS'
+    ],
+    [
+      'http://download.huzheng.org/bigdict/stardict-Macmillan_English_Dictionary-2.4.2.tar.bz2',
+      'http://download.huzheng.org/babylon/english/stardict-Collins_Cobuild_5-2.4.2.tar.bz2',
+      'http://download.huzheng.org/bigdict/stardict-Cambridge_Advanced_Learners_Dictionary_3th_Ed-2.4.2.tar.bz2',
+      'http://download.huzheng.org/bigdict/stardict-American_Idioms_2nd_Ed-2.4.2.tar.bz2',
+      'https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/stardict-3/WyabdcRealPeopleTTS.tar.bz2'
+    ],
+    ['tar.bz2', 'tar.bz2', 'tar.bz2', 'tar.bz2', 'tar.bz2']
+  ];
+
+  String progressString = '0%';
+  var progressValue = 0.0;
+
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+    progressString = appState.progressData;
+    progressValue = appState.progressValue;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('File Downloading'),
+      ),
+      body: ListView.builder(
+          itemCount: localDataList[0].length,
+          itemBuilder: (c, index) {
+            return ListTile(
+              leading: CircleAvatar(
+                child: Center(child: Text((index + 1).toString())),
+              ),
+              title: Text(localDataList[0][index].toString()),
+              subtitle: Text(localDataList[2][index].toString()),
+              trailing: ElevatedButton(
+                onPressed: () {
+                  downloadFile(localDataList[1][index], localDataList[0][index], localDataList[2][index], appState);
+                },
+                child: Text('Download File'),
+              ),
+            );
+          }),
+    );
+  }
+
+  Future<io.Directory?> _getDownloadDirectory() async {
+    if (Platform.isAndroid) {
+      return await getExternalStorageDirectory();
+    }
+
+    // in this example we are using only Android and iOS so I can assume
+    // that you are not trying it for other platforms and the if statement
+    // for iOS is unnecessary
+  
+    // iOS directory visible to user
+    return await getApplicationDocumentsDirectory();
+  }
+
+  Future<void> downloadFile(String url, String fileName, String extension, MyAppState appState) async {
+    var dio = Dio();
+    var dir = await _getDownloadDirectory();
+    var knockDir = await Directory('${dir?.path}/AZAR').create(recursive: true);
+    print("Hello checking the file in Externaal Sorage");
+    io.File('${knockDir.path}/$fileName.$extension').exists().then((a) async {
+      print(a);
+      if (a) {
+        print("Opening file");
+        showDialog(context: context,builder: (_){return AlertDialog(
+          title: Text('File is already downloaded'),
+          actions: <Widget>[
+            ElevatedButton(child: Text('Open'), onPressed: () {
+              // TODO write your function to open file
+              Navigator.pop(context);
+            })
+          ],
+        );});
+        return;
+      } else {
+        print("Downloading file");
+        openDialog();
+        await dio.download(url, '${knockDir.path}/$fileName.$extension',
+            onReceiveProgress: (rec, total) {
+          if (mounted) {
+            setState(() {
+              progressValue = (rec / total);
+              progressString = "${((rec / total) * 100).toStringAsFixed(0)}%";
+              appState.setProgressData(progressString);
+              appState.setProgressValue(progressValue);
+            });
+          }
+        });
+        if (mounted) {
+          setState(() {
+            print(knockDir.path);
+            // TODO write your function to open file
+          });
+        }
+        print("Download completed");
+      }
+    });
+  }
+
+  openDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return MyDialog();
+      },
+    );
+  }
+}
+
+class MyDialog extends StatefulWidget {
+  @override State<MyDialog> createState() => _MyDialogState();
+}
+
+class _MyDialogState extends State<MyDialog> {
+  @override
+  Widget build(BuildContext context) {
+    var appState = context.watch<MyAppState>();
+
+    String progressData = appState.progressData;
+    var progressValue = appState.progressValue;
+
+    print(progressValue);
+    return AlertDialog(
+      content: LinearProgressIndicator(
+        value: progressValue,
+        backgroundColor: Colors.red,
+      ),
+      title: Text(progressData),
+      actions: <Widget>[
+        progressValue == 1.0 ? ElevatedButton(child: Text('Done'), onPressed: () {
+        // TODO write your function to open file
+          Navigator.pop(context);
+      }):Container()
+      ],
     );
   }
 }
