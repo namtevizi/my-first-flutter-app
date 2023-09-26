@@ -26,6 +26,9 @@ $ flutter install -d <DEVICE_ID>
 ```
 
 ```bash
+% flutter pub add <lib-name>
+$ flutter pub add path_provider
+$ flutter pub add dio
 $ flutter pub get
 $ flutter pub outdated
 $ flutter pub upgrade
