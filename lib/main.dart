@@ -62,17 +62,12 @@ class MyAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  String progressData = '0%';
+  String downloadProgressPrompt = '0%';
+  var downloadProgressValue = 0.0;
   
-  void setProgressData(String data) {
-    progressData = data;
-    notifyListeners();
-  }
-
-  var progressValue = 0.0;
-
-  void setProgressValue(double value) {
-    progressValue = value;
+  void updateDownloadProgress(String prompt, double value) {
+    downloadProgressPrompt = prompt;
+    downloadProgressValue = value;
     notifyListeners();
   }
 }
@@ -419,14 +414,12 @@ class _DownloadPageState extends State<DownloadPage> {
     ['tar.bz2', 'tar.bz2', 'tar.bz2', 'tar.bz2', 'tar.bz2']
   ];
 
-  String progressString = '0%';
+  String progressPrompt = '0%';
   var progressValue = 0.0;
 
   @override
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
-    progressString = appState.progressData;
-    progressValue = appState.progressValue;
 
     return Scaffold(
       appBar: AppBar(
@@ -468,7 +461,7 @@ class _DownloadPageState extends State<DownloadPage> {
   Future<void> downloadFile(String url, String fileName, String extension, MyAppState appState) async {
     var dio = Dio();
     var dir = await _getDownloadDirectory();
-    var knockDir = await Directory('${dir?.path}/AZAR').create(recursive: true);
+    var knockDir = await Directory('${dir?.path}/MyFirstFlutterApp').create(recursive: true);
     print("Hello checking the file in Externaal Sorage");
     io.File('${knockDir.path}/$fileName.$extension').exists().then((a) async {
       print(a);
@@ -486,16 +479,16 @@ class _DownloadPageState extends State<DownloadPage> {
         return;
       } else {
         print("Downloading file");
+        appState.updateDownloadProgress('0%', 0.0);
         openDialog();
         await dio.download(url, '${knockDir.path}/$fileName.$extension',
-            onReceiveProgress: (rec, total) {
+            onReceiveProgress: (received, total) {
           if (mounted) {
             setState(() {
-              progressValue = (rec / total);
-              progressString = "${((rec / total) * 100).toStringAsFixed(0)}%";
-              appState.setProgressData(progressString);
-              appState.setProgressValue(progressValue);
+              progressValue = (received / total);
+              progressPrompt = "${((received / total) * 100).toStringAsFixed(0)}%";
             });
+            appState.updateDownloadProgress(progressPrompt, progressValue);
           }
         });
         if (mounted) {
@@ -529,8 +522,8 @@ class _MyDialogState extends State<MyDialog> {
   Widget build(BuildContext context) {
     var appState = context.watch<MyAppState>();
 
-    String progressData = appState.progressData;
-    var progressValue = appState.progressValue;
+    final progressPrompt = appState.downloadProgressPrompt;
+    final progressValue = appState.downloadProgressValue;
 
     print(progressValue);
     return AlertDialog(
@@ -538,7 +531,7 @@ class _MyDialogState extends State<MyDialog> {
         value: progressValue,
         backgroundColor: Colors.red,
       ),
-      title: Text(progressData),
+      title: Text(progressPrompt),
       actions: <Widget>[
         progressValue == 1.0 ? ElevatedButton(child: Text('Done'), onPressed: () {
         // TODO write your function to open file
